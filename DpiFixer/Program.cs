@@ -1,8 +1,8 @@
 ﻿using DpiFixer.Models;
-using System.Drawing;
-using System.Drawing.Imaging;
+using System.Reflection;
 
-string[] files = Directory.GetFiles(".\\", "*.jpg");
+string baseDirectory = Path.GetDirectoryName(Assembly.GetCallingAssembly().Location);
+string[] files = Directory.GetFiles(baseDirectory, "*.jpg");
 
 Console.WriteLine($"Found {files.Length} files in the current folder.");
 
@@ -11,29 +11,26 @@ if (files.Length == 0)
     return;
 }
 
-string dirName = Directory.GetCurrentDirectory();
-dirName = $".\\{Path.GetFileName(dirName)}_96"; ;
+string targetDirectory = $"{baseDirectory}_96";
 
-if (!Directory.Exists(dirName))
+if (!Directory.Exists(targetDirectory))
 {
-    Directory.CreateDirectory(dirName);
-    Console.WriteLine($"Created directory {dirName}.");
+    Directory.CreateDirectory(targetDirectory);
+    Console.WriteLine($"Created directory {targetDirectory}.");
 }
 
 Console.WriteLine("Working.... Please wait");
 int counter = 0;
 
-foreach (string file in files)
+foreach (string fileName in files)
 {
-    var image = new MappedImage(file);
+    var easyBmp = new EasyBitmap(fileName);
 
-    if (!image.HasRealDpi() || image.HasLowDpi())
+    if (!easyBmp.HasRealDpi() || easyBmp.HasLowDpi())
     {
-        image.UpscaleDpi();
-
-        string newName = $"{dirName}\\{file}";
-
-        image.SaveAs(newName);
+        easyBmp.UpscaleDpi();
+        easyBmp.SaveAs(targetDirectory, fileName);
+        
         counter++;
     }
 }

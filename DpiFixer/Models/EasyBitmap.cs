@@ -1,35 +1,56 @@
 ﻿using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO.Compression;
 
 namespace DpiFixer.Models
 {
     public class EasyBitmap
     {
-        private readonly Bitmap _bitmap;
+        private readonly string? _dest;
+        private readonly string? _fileName;
 
-        public EasyBitmap(string filePath)
+        private readonly Bitmap? _bitmap;
+
+        public EasyBitmap(string? dest, string? filePath)
         {
-            _bitmap = (Bitmap)Image.FromFile(filePath);
+            _dest = dest ?? throw new ArgumentNullException(nameof(dest));
+            _fileName = Path.GetFileName(filePath) ?? throw new ArgumentNullException(nameof(filePath));
+
+            _bitmap = (Bitmap)Image.FromFile(filePath!);
         }
 
-        public bool HasRealDpi()
+        private bool HasRealDpi()
         {
             return (_bitmap.Flags & (int)ImageFlags.HasRealDpi) > 0;
         }
 
-        public bool HasLowDpi()
+        private bool HasLowDpi()
         {
             return (_bitmap.HorizontalResolution < 96.0f) || (_bitmap.VerticalResolution < 96.0f);
         }
 
-        public void UpscaleDpi()
+        private void UpscaleDpi()
         {
             _bitmap.SetResolution(96.0f, 96.0f);
         }
 
-        public void SaveAs(string directory, string fileName)
+        private bool NeedsUpscale()
         {
-            _bitmap.Save(Path.Combine(directory, fileName), ImageFormat.Jpeg);
+            return (!this.HasRealDpi() || this.HasLowDpi());
+        }
+
+        private void Save()
+        {
+            _bitmap.Save(Path.Combine(this._dest, this._fileName), ImageFormat.Jpeg);
+        }
+
+        public void UpscaleCallback(object? sender, EventArgs e)
+        {
+            if (this.NeedsUpscale())
+            {
+                this.UpscaleDpi();
+                this.Save();
+            }
         }
     }
 }
